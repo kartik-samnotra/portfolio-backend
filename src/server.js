@@ -5,6 +5,10 @@ require('dotenv').config();
 
 const { testConnection } = require('./config/database');
 const { syncDatabase } = require('./config/sync');
+const errorHandler = require('./middleware/errorHandler');
+
+// Import Routes
+const authRoutes = require('./routes/authRoutes');
 
 const app = express();
 
@@ -15,19 +19,12 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
-
-// Add after middleware section
-const authRoutes = require('./routes/authRoutes');
+app.use('/uploads', express.static(path.join(__dirname, '..', 'public', 'uploads')));
 
 // Test database connection
 testConnection();
 
-// Routes will be added here
-
-// Mount routes
-app.use('/api/auth', authRoutes);
-
+// Routes
 app.get('/', (req, res) => {
   res.json({
     message: '🎯 Portfolio CMS API',
@@ -40,6 +37,9 @@ app.get('/', (req, res) => {
   });
 });
 
+// API Routes
+app.use('/api/auth', authRoutes);
+
 // 404 Handler
 app.use('*', (req, res) => {
   res.status(404).json({
@@ -49,14 +49,7 @@ app.use('*', (req, res) => {
 });
 
 // Error Handler
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({
-    success: false,
-    message: 'Internal server error',
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined
-  });
-});
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
@@ -69,6 +62,8 @@ const startServer = async () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📁 Environment: ${process.env.NODE_ENV}`);
       console.log(`🔗 API: http://localhost:${PORT}`);
+      console.log(`👤 Admin Login: ${process.env.ADMIN_EMAIL}`);
+      console.log(`🔐 Admin Password: ${process.env.ADMIN_PASSWORD}`);
     });
   } catch (error) {
     console.error('❌ Server startup failed:', error);
